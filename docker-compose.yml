@@ -1,0 +1,49 @@
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: inovagab-mongo
+
+    environment:
+      MONGO_INITDB_DATABASE: inovagab
+
+    volumes:
+      - mongo_data:/data/db
+
+    networks:
+      - inovagab-network
+
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  app:
+    build: .
+    container_name: inovagab-api
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/inovagab
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 8080
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+    networks:
+      - inovagab-network
+
+
+volumes:
+  mongo_data:
+
+
+networks:
+  inovagab-network:
+    driver: bridge
