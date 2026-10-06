@@ -45,7 +45,7 @@ jobs:
           push: false
           tags: inovagab-backend:latest
 
-    deploy-production:
+    deploy_production:
         name: 3. Deploy em Produção
         needs: docker-build
         runs-on: ubuntu-latest
