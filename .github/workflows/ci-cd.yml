@@ -44,3 +44,13 @@ jobs:
           file: ./dockerfile
           push: false
           tags: inovagab-backend:latest
+
+    deploy-production:
+        name: 3. Deploy em Produção
+        needs: docker-build
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+        steps:
+          - name: Deploy no Render
+            run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
