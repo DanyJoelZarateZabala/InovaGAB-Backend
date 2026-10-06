@@ -269,11 +269,128 @@ O endereço base depende de onde o backend é executado:
 
 O app precisa da permissão `INTERNET` e, para desenvolvimento por HTTP local, configuração de tráfego claro compatível com a versão Android. Para uma implantação pública, prefira **HTTPS** e desabilite credenciais de demonstração. `10.0.2.2` **não é** endereço público e não permite que um APK funcione sozinho em qualquer celular.
 
-## 10. Evidências e estado da validação
 
-Na validação manual relatada durante o desenvolvimento foram confirmados: inicialização com Java 17, conexão com Atlas, login dos três perfis, Bearer JWT, criação/listagem/atualização de orientações, desativação lógica, filtro de vigentes e bloqueio de criação para operador e gestor (`403`). A orientação criada foi conferida na coleção do Atlas.
+## 10. DevOps, Docker e CI/CD
 
-**Ainda requerem verificação integrada para a entrega:** fluxos completos de ideias e projetos, dashboard, resposta real do Gemini, telas Android consumindo a API e instalação/execução do APK. A existência dos endpoints no código não substitui esses testes.
+Containerização
+
+A aplicação possui um `Dockerfile` para criação da imagem do backend e um `docker-compose.yml` para execução do ambiente local.
+
+O ambiente Docker local utiliza:
+
+- **Backend:** aplicação Spring Boot com Java 17;
+- **MongoDB:** banco de dados utilizado pela aplicação;
+- **Volume:** persistência dos dados do MongoDB;
+- **Network:** comunicação entre os containers;
+- **Variáveis de ambiente:** configuração de credenciais e parâmetros sem armazená-los diretamente no código.
+
+Para executar o ambiente local:
+
+```bash
+docker compose up --build
+
+A API fica disponível em:
+http://localhost:8080
+
+Pipeline CI/CD
+
+Foi implementado um pipeline de integração e entrega contínua utilizando GitHub Actions.
+
+O arquivo do pipeline está localizado em:
+.github/workflows/ci-cd.yml
+
+O pipeline é acionado automaticamente a partir de alterações enviadas para as branches configuradas do projeto.
+
+Etapas do pipeline
+
+O pipeline possui as seguintes etapas:
+
+1. Build e Testes
+- Checkout do código-fonte;
+- Configuração do Java 17 utilizando Eclipse Temurin;
+- Configuração do cache do Maven;
+- Execução do build da aplicação;
+- Execução dos testes automatizados utilizando Maven.
+
+Comando utilizado:
+mvn clean package -DskipTests=false
+
+2. Build da Imagem Docker
+
+Após a conclusão do build e dos testes, o pipeline realiza a construção da imagem Docker da aplicação.
+
+Essa etapa utiliza o Dockerfile existente no projeto e valida se a imagem pode ser construída corretamente.
+
+3. Deploy em Staging
+
+Quando ocorre um push na branch staging, o pipeline executa automaticamente o deploy no ambiente de Staging.
+
+O deploy é realizado através de um Deploy Hook do Render, armazenado como GitHub Secret.
+
+4. Deploy em Produção
+
+Quando ocorre um push na branch main, o pipeline executa automaticamente o deploy no ambiente de Produção utilizando o Deploy Hook configurado no GitHub.
+
+Fluxo do CI/CD
+O fluxo implementado pode ser representado da seguinte forma:
+Desenvolvimento
+      ↓
+Git Push
+      ↓
+GitHub Actions
+      ↓
+Build + Testes
+      ↓
+Build da Imagem Docker
+      ↓
+ ┌───────────────┐
+ │               │
+ ↓               ↓
+staging          main
+ ↓               ↓
+Deploy           Deploy
+Staging          Produção
+ ↓               ↓
+Render           Render
+
+Dessa forma, alterações enviadas para staging são direcionadas ao ambiente de Staging, enquanto alterações enviadas para main são direcionadas ao ambiente de Produção.
+
+Ambientes
+
+Ambiente	 Branch	    Plataforma	  Estratégia de Deploy
+Staging	   staging	  Render	      Automático via GitHub Actions
+Produção	 main	      Render	      Automático via GitHub Actions
+
+
+O ambiente de Staging é utilizado para validar a aplicação antes de alterações serem disponibilizadas em Produção.
+
+Gerenciamento de Secrets
+
+As informações sensíveis utilizadas pela aplicação e pelo processo de deploy não são armazenadas diretamente no código-fonte.
+
+Entre as configurações protegidas estão:
+- MONGODB_URI;
+- JWT_SECRET;
+- DEMO_SEED_PASSWORD;
+- Deploy Hook do ambiente de Staging;
+- Deploy Hook do ambiente de Produção.
+
+Os Deploy Hooks utilizados pelo pipeline são armazenados no GitHub Secrets.
+
+As configurações de ambiente da aplicação são fornecidas por variáveis de ambiente no ambiente de execução.
+
+Deploy e validação
+
+O pipeline foi validado utilizando a branch staging.
+
+Durante a validação foram executadas com sucesso as etapas de:
+- Build e testes da aplicação;
+- Build da imagem Docker;
+- Deploy automático no ambiente de Staging.
+
+Após o deploy, o serviço de Staging ficou disponível no Render e a API foi validada através de uma requisição de autenticação.
+
+O ambiente de Produção também possui deploy automatizado através da branch main.
 
 ## 11. Problemas comuns
 
