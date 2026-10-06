@@ -2,9 +2,9 @@ name: CI/CD Pipeline - InovaGAB
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "staging" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "staging" ]
 
 jobs:
   build-and-test:
@@ -45,12 +45,31 @@ jobs:
           push: false
           tags: inovagab-backend:latest
 
+<<<<<<< Updated upstream
   deploy-production:
     name: 3. Deploy em Produção
+=======
+  deploy-staging:
+    name: 3. Deploy em Staging
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+
+    steps:
+      - name: Deploy no Render
+        run: curl -fsS -X POST "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}"
+
+  deploy-production:
+    name: 4. Deploy em Produção
+>>>>>>> Stashed changes
     needs: docker-build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Deploy no Render
+<<<<<<< Updated upstream
         run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+=======
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+>>>>>>> Stashed changes
